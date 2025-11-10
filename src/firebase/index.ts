@@ -26,8 +26,7 @@ function initializeFirebase(): FirebaseServices {
         storage: null,
     } as unknown as FirebaseServices;
   }
-
-  // Only initialize on the client
+  
   if (!firebaseServices) {
     const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     const auth = getAuth(app);

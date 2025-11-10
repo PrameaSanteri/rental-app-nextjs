@@ -1,12 +1,12 @@
 'use server';
 
 import {
+  getAuth,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
 } from 'firebase/auth';
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { firebaseConfig } from '@/firebase/config';
@@ -189,18 +189,25 @@ export async function getTasksForProperty(
 
 // Dashboard Data
 export async function getDashboardData() {
+  const { db } = getFirebaseServices();
   // These are simplified mocks. A real implementation would involve more complex queries.
+  
+  const properties = await getProperties();
+  const tasksQuery = query(collection(db, 'tasks'));
+  const tasksSnapshot = await getDocs(tasksQuery);
+  const tasks = tasksSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as MaintenanceTask);
+
   const stats = {
-    totalProperties: 4,
-    activeTasks: 8,
-    completedTasks: 32,
-    overdueTasks: 2,
+    totalProperties: properties.length,
+    activeTasks: tasks.filter(t => t.status === 'Open' || t.status === 'In Progress').length,
+    completedTasks: tasks.filter(t => t.status === 'Completed').length,
+    overdueTasks: tasks.filter(t => t.deadline && t.deadline.toDate() < new Date() && t.status !== 'Completed').length,
   };
-  const recentTasks: MaintenanceTask[] = [
-    { id: '1', title: 'Fix leaky faucet in Apt 3B', propertyId: '1', status: 'In Progress', deadline: Timestamp.fromDate(new Date('2024-08-10')), createdAt: Timestamp.now(), photos: [] },
-    { id: '2', title: 'Paint living room', propertyId: '2', status: 'Open', deadline: Timestamp.fromDate(new Date('2024-08-15')), createdAt: Timestamp.now(), photos: [] },
-    { id: '3', title: 'Repair broken window', propertyId: '1', status: 'Completed', deadline: null, createdAt: Timestamp.now(), photos: [] },
-  ];
+
+  const recentTasksQuery = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'), limit(5));
+  const recentTasksSnapshot = await getDocs(recentTasksQuery);
+  const recentTasks = recentTasksSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as MaintenanceTask);
+
   return { stats, recentTasks };
 }
 
