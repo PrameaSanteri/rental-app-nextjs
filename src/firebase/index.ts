@@ -18,7 +18,8 @@ let firebaseServices: FirebaseServices | null = null;
 
 function initializeFirebase(): FirebaseServices {
   if (typeof window === 'undefined') {
-    // Return null services on the server
+    // On the server, return a 'null' version of the services.
+    // This prevents the app from crashing during server-side rendering.
     return {
         app: null,
         auth: null,
