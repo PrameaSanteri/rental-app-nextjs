@@ -18,6 +18,7 @@ let firebaseServices: FirebaseServices | null = null;
 
 function initializeFirebase(): FirebaseServices {
   if (typeof window === 'undefined') {
+    // Return null services on the server
     return {
         app: null,
         auth: null,
@@ -26,6 +27,7 @@ function initializeFirebase(): FirebaseServices {
     } as unknown as FirebaseServices;
   }
 
+  // Only initialize on the client
   if (!firebaseServices) {
     const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     const auth = getAuth(app);
