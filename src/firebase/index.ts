@@ -14,32 +14,21 @@ type FirebaseServices = {
   storage: FirebaseStorage;
 };
 
-let firebaseServices: FirebaseServices | null = null;
-
-function initializeFirebase(): FirebaseServices {
-  if (typeof window === 'undefined') {
-    // On the server, return a 'null' version of the services to prevent crashes.
-    return {
-        app: null,
-        auth: null,
-        db: null,
-        storage: null,
-    } as unknown as FirebaseServices;
-  }
-  
-  if (!firebaseServices) {
-    const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-    firebaseServices = { app, auth, db, storage };
-  }
-
-  return firebaseServices;
+let firebaseApp: FirebaseApp;
+if (!getApps().length) {
+  firebaseApp = initializeApp(firebaseConfig);
+} else {
+  firebaseApp = getApp();
 }
 
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
+const storage = getStorage(firebaseApp);
+
+export const app = firebaseApp;
+export { auth, db, storage };
+
 export { 
-    initializeFirebase,
     FirebaseProvider,
     useFirebase,
     FirebaseClientProvider

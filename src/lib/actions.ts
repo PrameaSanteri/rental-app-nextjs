@@ -1,15 +1,10 @@
 'use server';
 
-import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getFirestore } from 'firebase/firestore';
-import { getStorage } from 'firebase/storage';
-import { firebaseConfig } from '@/firebase/config';
-
+import { db, storage } from '@/firebase';
 import {
   collection,
   addDoc,
   doc,
-  setDoc,
   getDoc,
   getDocs,
   query,
@@ -18,18 +13,11 @@ import {
   orderBy,
   limit,
   updateDoc,
+  getCountFromServer,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { revalidatePath } from 'next/cache';
-import type { MaintenanceTask, Property, TaskComment, UserProfile } from './types';
-import { PlaceHolderImages } from './placeholder-images';
-
-function getFirebaseServices() {
-    const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-    return { db, storage };
-}
+import type { MaintenanceTask, Property, TaskComment } from './types';
 
 // Property Actions
 export async function addProperty(data: {
@@ -37,9 +25,8 @@ export async function addProperty(data: {
   address: string;
   imageUrl: string;
   imageHint: string;
-  ownerId: string; // This can be a static value or removed if no longer needed
+  ownerId: string; 
 }) {
-  const { db } = getFirebaseServices();
   try {
     await addDoc(collection(db, 'properties'), {
       ...data,
@@ -54,7 +41,6 @@ export async function addProperty(data: {
 }
 
 export async function getProperties(): Promise<Property[]> {
-  const { db } = getFirebaseServices();
   const q = query(collection(db, 'properties'), orderBy('createdAt', 'desc'));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(
@@ -63,7 +49,6 @@ export async function getProperties(): Promise<Property[]> {
 }
 
 export async function getPropertyById(id: string): Promise<Property | null> {
-  const { db } = getFirebaseServices();
   const docRef = doc(db, 'properties', id);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
@@ -74,7 +59,6 @@ export async function getPropertyById(id: string): Promise<Property | null> {
 
 // Task Actions
 export async function upsertTask(formData: FormData) {
-  const { db, storage } = getFirebaseServices();
   try {
     const rawData = formData.get('data') as string;
     if (!rawData) throw new Error('Missing task data');
@@ -121,11 +105,9 @@ export async function upsertTask(formData: FormData) {
   }
 }
 
-
 export async function getTasksForProperty(
   propertyId: string
 ): Promise<MaintenanceTask[]> {
-  const { db } = getFirebaseServices();
   const q = query(
     collection(db, 'tasks'),
     where('propertyId', '==', propertyId),
@@ -139,19 +121,31 @@ export async function getTasksForProperty(
 
 // Dashboard Data
 export async function getDashboardData() {
-  const { db } = getFirebaseServices();
-  // These are simplified mocks. A real implementation would involve more complex queries.
-  
-  const properties = await getProperties();
-  const tasksQuery = query(collection(db, 'tasks'));
-  const tasksSnapshot = await getDocs(tasksQuery);
-  const tasks = tasksSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}) as MaintenanceTask);
+  // Queries for stats
+  const propertiesCol = collection(db, 'properties');
+  const tasksCol = collection(db, 'tasks');
+  const completedTasksQuery = query(tasksCol, where('status', '==', 'Completed'));
+  const activeTasksQuery = query(tasksCol, where('status', 'in', ['Open', 'In Progress']));
+
+  // Fetch counts and active tasks in parallel
+  const [
+      propertiesCountSnap,
+      completedTasksCountSnap,
+      activeTasksSnap
+  ] = await Promise.all([
+      getCountFromServer(propertiesCol),
+      getCountFromServer(completedTasksQuery),
+      getDocs(activeTasksQuery)
+  ]);
+
+  const activeTasks = activeTasksSnap.docs.map(doc => doc.data() as MaintenanceTask);
+  const overdueTasks = activeTasks.filter(t => t.deadline && t.deadline.toDate() < new Date()).length;
 
   const stats = {
-    totalProperties: properties.length,
-    activeTasks: tasks.filter(t => t.status === 'Open' || t.status === 'In Progress').length,
-    completedTasks: tasks.filter(t => t.status === 'Completed').length,
-    overdueTasks: tasks.filter(t => t.deadline && t.deadline.toDate() < new Date() && t.status !== 'Completed').length,
+    totalProperties: propertiesCountSnap.data().count,
+    activeTasks: activeTasks.length,
+    completedTasks: completedTasksCountSnap.data().count,
+    overdueTasks: overdueTasks,
   };
 
   const recentTasksQuery = query(collection(db, 'tasks'), orderBy('createdAt', 'desc'), limit(5));
@@ -168,7 +162,6 @@ export async function addComment(data: {
   userId: string;
   userDisplayName: string;
 }) {
-  const { db } = getFirebaseServices();
   try {
     const commentData = {
         ...data,
@@ -185,7 +178,6 @@ export async function addComment(data: {
 }
 
 export async function getCommentsForTask(taskId: string): Promise<TaskComment[]> {
-    const { db } = getFirebaseServices();
     const q = query(
         collection(db, `tasks/${taskId}/comments`),
         orderBy('createdAt', 'desc')
