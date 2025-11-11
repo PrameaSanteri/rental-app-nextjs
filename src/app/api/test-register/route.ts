@@ -1,47 +1,40 @@
 'use server';
-import { initializeApp, getApps, cert } from 'firebase-admin/app';
-import { getAuth } from 'firebase-admin/auth';
+import { initializeApp, getApps, getApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { NextResponse } from 'next/server';
+import { firebaseConfig } from '@/firebase/config';
 
-const serviceAccount = {
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-  privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
-};
-
-if (
-  !getApps().find(
-    (app) => app?.name === 'test-register'
-  )
-) {
-  initializeApp(
-    {
-      credential: cert(serviceAccount),
-    },
-    'test-register'
-  );
-}
+// Initialize Firebase client app if not already initialized
+const app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig, 'test-register-client');
+const auth = getAuth(app);
 
 export async function GET() {
   try {
-    const auth = getAuth(getApps().find((app) => app?.name === 'test-register'));
     const email = 'testuser@example.com';
-    // Check if user already exists
+    const password = 'password123';
+
+    // Try to sign in to check if user exists.
+    // This is a client-side way to check for existence without admin privileges.
     try {
-      const user = await auth.getUserByEmail(email);
-      return NextResponse.json({ message: `Dummy user ${user.email} already exists.` });
+        await signInWithEmailAndPassword(auth, email, password);
+        return NextResponse.json({ message: `Dummy user ${email} already exists.` });
     } catch (error: any) {
-        if (error.code !== 'auth/user-not-found') {
+        if (error.code !== 'auth/invalid-credential' && error.code !== 'auth/user-not-found') {
+            // If it's another error (like network), throw it.
             throw error;
         }
+        // If user not found or invalid credential, we can proceed to create.
     }
 
-    await auth.createUser({
-      email,
-      password: 'password123',
-    });
+    // Create the user
+    await createUserWithEmailAndPassword(auth, email, password);
     return NextResponse.json({ message: `Dummy user ${email} created successfully!` });
+
   } catch (error: any) {
+    // Distinguish between user already existing and other errors during creation
+    if (error.code === 'auth/email-already-in-use') {
+        return NextResponse.json({ message: `Dummy user testuser@example.com already exists.` });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
