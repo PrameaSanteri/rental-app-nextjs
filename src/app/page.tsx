@@ -10,11 +10,8 @@ export default function Home() {
       <header className="container mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
         <Logo />
         <div className="flex items-center gap-4">
-          <Button variant="ghost" asChild>
-            <Link href="/login">Log In</Link>
-          </Button>
-          <Button asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
-            <Link href="/register">Sign Up</Link>
+          <Button asChild>
+            <Link href="/login">Open Application</Link>
           </Button>
         </div>
       </header>
@@ -28,7 +25,7 @@ export default function Home() {
             PropertyCare Pro helps you log, track, and manage maintenance tasks for your rental properties with ease. Stay organized and keep your tenants happy.
           </p>
           <Button size="lg" asChild className="bg-accent hover:bg-accent/90 text-accent-foreground">
-            <Link href="/register">Get Started for Free</Link>
+            <Link href="/login">Get Started</Link>
           </Button>
         </section>
 

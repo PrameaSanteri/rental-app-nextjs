@@ -6,7 +6,6 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { addProperty } from '@/lib/actions';
-import { useAuth } from '@/components/auth/AuthContext';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
 import { Button } from '@/components/ui/button';
@@ -26,7 +25,6 @@ const formSchema = z.object({
 export default function AddPropertyPage() {
   const router = useRouter();
   const { toast } = useToast();
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -39,10 +37,6 @@ export default function AddPropertyPage() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
-      toast({ variant: 'destructive', title: 'You must be logged in.' });
-      return;
-    }
     setLoading(true);
 
     const selectedImage = PlaceHolderImages.find(img => img.id === values.imageId);
@@ -56,7 +50,7 @@ export default function AddPropertyPage() {
         ...values,
         imageUrl: selectedImage.imageUrl,
         imageHint: selectedImage.imageHint,
-        ownerId: user.uid,
+        ownerId: 'pinned-user', // Static owner ID since we don't have users
     });
 
     if (result.error) {

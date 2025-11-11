@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Home, Building, LogOut } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { logout } from '@/lib/actions';
+import { useAuth } from '@/components/auth/AuthContext';
 import Logo from './Logo';
 
 const navItems = [
@@ -19,9 +19,10 @@ type AppSidebarProps = {
 
 export function AppSidebar({ isMobile = false }: AppSidebarProps) {
   const pathname = usePathname();
+  const { logout } = useAuth();
 
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    logout();
   };
 
   const navContent = (

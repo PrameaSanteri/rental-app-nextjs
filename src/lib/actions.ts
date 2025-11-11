@@ -1,11 +1,5 @@
 'use server';
 
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  signOut,
-} from 'firebase/auth';
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
@@ -32,52 +26,9 @@ import { PlaceHolderImages } from './placeholder-images';
 
 function getFirebaseServices() {
     const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
-    const auth = getAuth(app);
     const db = getFirestore(app);
     const storage = getStorage(app);
-    return { auth, db, storage };
-}
-
-// Auth Actions
-export async function login(data: any) {
-  const { auth } = getFirebaseServices();
-  try {
-    await signInWithEmailAndPassword(auth, data.email, data.password);
-    return { success: true };
-  } catch (error: any) {
-    return { error: error.message };
-  }
-}
-
-export async function register(data: any) {
-  const { auth, db } = getFirebaseServices();
-  try {
-    const userCredential = await createUserWithEmailAndPassword(
-      auth,
-      data.email,
-      data.password
-    );
-    const user = userCredential.user;
-    const userProfile: UserProfile = {
-      uid: user.uid,
-      email: user.email,
-      displayName: data.email?.split('@')[0] || 'New User',
-    };
-    await setDoc(doc(db, 'users', user.uid), userProfile);
-    return { success: true };
-  } catch (error: any) {
-    return { error: error.message };
-  }
-}
-
-export async function logout() {
-  const { auth } = getFirebaseServices();
-  try {
-    await signOut(auth);
-    return { success: true };
-  } catch (error: any) {
-    return { error: error.message };
-  }
+    return { db, storage };
 }
 
 // Property Actions
@@ -86,7 +37,7 @@ export async function addProperty(data: {
   address: string;
   imageUrl: string;
   imageHint: string;
-  ownerId: string;
+  ownerId: string; // This can be a static value or removed if no longer needed
 }) {
   const { db } = getFirebaseServices();
   try {
@@ -104,7 +55,6 @@ export async function addProperty(data: {
 
 export async function getProperties(): Promise<Property[]> {
   const { db } = getFirebaseServices();
-  // In a real app, you would filter by ownerId
   const q = query(collection(db, 'properties'), orderBy('createdAt', 'desc'));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(

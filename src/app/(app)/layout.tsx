@@ -8,16 +8,16 @@ import { AppHeader } from '@/components/layout/AppHeader';
 import { Skeleton } from '@/components/ui/skeleton';
 
 export default function AppLayout({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+  const { isAuthenticated, loading } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
+    if (!loading && !isAuthenticated) {
       router.push('/login');
     }
-  }, [user, loading, router]);
+  }, [isAuthenticated, loading, router]);
 
-  if (loading || !user) {
+  if (loading || !isAuthenticated) {
     return (
       <div className="flex h-screen w-full items-center justify-center">
         <div className="flex flex-col items-center gap-4">

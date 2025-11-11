@@ -8,7 +8,6 @@ import { format } from 'date-fns';
 import { Calendar as CalendarIcon, Loader2, PlusCircle, Edit } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { upsertTask } from '@/lib/actions';
-import { useAuth } from '@/components/auth/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import type { MaintenanceTask } from '@/lib/types';
 
@@ -35,7 +34,6 @@ type TaskFormDialogProps = {
 
 export default function TaskFormDialog({ propertyId, task }: TaskFormDialogProps) {
   const { toast } = useToast();
-  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
@@ -57,10 +55,6 @@ export default function TaskFormDialog({ propertyId, task }: TaskFormDialogProps
   };
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!user) {
-      toast({ variant: 'destructive', title: 'You must be logged in.' });
-      return;
-    }
     setLoading(true);
 
     const formData = new FormData();

@@ -14,7 +14,6 @@ import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/components/auth/AuthContext';
 import { addComment, getCommentsForTask } from '@/lib/actions';
 import type { MaintenanceTask, TaskComment } from '@/lib/types';
 import { Separator } from '../ui/separator';
@@ -31,7 +30,6 @@ export default function TaskComments({ task }: TaskCommentsProps) {
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [comments, setComments] = useState<TaskComment[]>([]);
-  const { user } = useAuth();
   const { toast } = useToast();
 
   const form = useForm<z.infer<typeof commentSchema>>({
@@ -50,16 +48,12 @@ export default function TaskComments({ task }: TaskCommentsProps) {
   };
 
   async function onSubmit(values: z.infer<typeof commentSchema>) {
-    if (!user) {
-      toast({ variant: 'destructive', title: 'You must be logged in.' });
-      return;
-    }
     setLoading(true);
     const result = await addComment({
       taskId: task.id,
       text: values.text,
-      userId: user.uid,
-      userDisplayName: user.displayName || 'Anonymous',
+      userId: 'pinned-user',
+      userDisplayName: 'Admin',
     });
 
     if (result.error) {

@@ -1,51 +1,63 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { onAuthStateChanged, type User } from 'firebase/auth';
-import { useFirebase } from '@/firebase';
-import { doc, getDoc } from 'firebase/firestore';
-import type { UserProfile } from '@/lib/types';
+import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
 
 interface AuthContextType {
-  user: UserProfile | null;
+  isAuthenticated: boolean;
   loading: boolean;
+  login: () => void;
+  logout: () => void;
 }
 
-const AuthContext = createContext<AuthContextType>({ user: null, loading: true });
+const AuthContext = createContext<AuthContextType>({
+  isAuthenticated: false,
+  loading: true,
+  login: () => {},
+  logout: () => {},
+});
+
+const AUTH_STORAGE_KEY = 'pin_authenticated';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const { auth, db } = useFirebase();
-  const [user, setUser] = useState<UserProfile | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!auth || !db) return;
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser: User | null) => {
-      if (firebaseUser) {
-        const userDocRef = doc(db, 'users', firebaseUser.uid);
-        const userDoc = await getDoc(userDocRef);
-        if (userDoc.exists()) {
-          setUser(userDoc.data() as UserProfile);
-        } else {
-          // This case might happen if user document creation fails after registration
-          const newUserProfile: UserProfile = {
-            uid: firebaseUser.uid,
-            email: firebaseUser.email,
-            displayName: firebaseUser.displayName || 'New User',
-          };
-          setUser(newUserProfile);
-        }
-      } else {
-        setUser(null);
+    try {
+      const storedAuth = sessionStorage.getItem(AUTH_STORAGE_KEY);
+      if (storedAuth === 'true') {
+        setIsAuthenticated(true);
       }
-      setLoading(false);
-    });
+    } catch (e) {
+      console.error('Could not read session storage for auth state', e);
+    }
+    setLoading(false);
+  }, []);
 
-    return () => unsubscribe();
-  }, [auth, db]);
+  const login = () => {
+    try {
+      sessionStorage.setItem(AUTH_STORAGE_KEY, 'true');
+    } catch (e) {
+      console.error('Could not write to session storage', e);
+    }
+    setIsAuthenticated(true);
+  };
+
+  const logout = () => {
+    try {
+      sessionStorage.removeItem(AUTH_STORAGE_KEY);
+    } catch (e) {
+      console.error('Could not write to session storage', e);
+    }
+    setIsAuthenticated(false);
+    // Redirect to login page after logout
+    window.location.href = '/login';
+  };
+
+  const value = { isAuthenticated, loading, login, logout };
 
   return (
-    <AuthContext.Provider value={{ user, loading }}>
+    <AuthContext.Provider value={value}>
       {children}
     </AuthContext.Provider>
   );
