@@ -1,9 +1,10 @@
+
+import { getProperties } from '@/lib/actions';
 import Link from 'next/link';
 import Image from 'next/image';
-import { PlusCircle, Home } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { getProperties } from '@/lib/actions';
+import { Button } from '@/components/ui/button';
+import { PlusCircle, Users } from 'lucide-react'; // Import Users icon
 
 export default async function PropertiesPage() {
   const properties = await getProperties();
@@ -14,47 +15,45 @@ export default async function PropertiesPage() {
         <h1 className="text-3xl font-bold font-headline">Properties</h1>
         <Button asChild>
           <Link href="/properties/add">
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Property
+            <PlusCircle className="mr-2 h-4 w-4" /> Add New Property
           </Link>
         </Button>
       </div>
 
-      {properties.length > 0 ? (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {properties.map((property) => (
-            <Card key={property.id}>
+      {properties.length === 0 ? (
+        <p>No properties found. Add your first one!</p>
+      ) : (
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {properties.map((prop) => (
+            <Card key={prop.id} className="flex flex-col">
               <CardHeader className="p-0">
-                <Image
-                  src={property.imageUrl}
-                  alt={property.name}
-                  width={600}
-                  height={400}
-                  data-ai-hint={property.imageHint}
-                  className="rounded-t-lg object-cover aspect-[3/2]"
-                />
+                <div className="relative h-48 w-full">
+                  <Image
+                    src={prop.imageUrl}
+                    alt={`Image of ${prop.name}`}
+                    layout="fill"
+                    objectFit="cover"
+                    className="rounded-t-lg"
+                  />
+                </div>
               </CardHeader>
-              <CardContent className="p-4">
-                <CardTitle className="text-lg mb-2">{property.name}</CardTitle>
-                <p className="text-sm text-muted-foreground">{property.address}</p>
+              <CardContent className="flex-1 p-4">
+                <CardTitle className="mb-2 font-headline text-xl">{prop.name}</CardTitle>
+                <p className="text-sm text-muted-foreground">{prop.address}</p>
               </CardContent>
-              <CardFooter className="p-4 pt-0">
-                <Button asChild className="w-full">
-                  <Link href={`/properties/${property.id}`}>View Details</Link>
+              <CardFooter className="flex justify-between p-4">
+                <div className="flex items-center">
+                  <Users className="mr-2 h-5 w-5 text-muted-foreground" />
+                  <span className="text-lg font-bold">
+                    {prop.currentGuestCount !== undefined ? prop.currentGuestCount : 'N/A'}
+                  </span>
+                </div>
+                <Button asChild variant="secondary">
+                  <Link href={`/properties/${prop.id}`}>View Details</Link>
                 </Button>
               </CardFooter>
             </Card>
           ))}
-        </div>
-      ) : (
-        <div className="flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-muted-foreground/30 py-20 text-center">
-            <Home className="w-16 h-16 text-muted-foreground/50 mb-4" />
-            <h2 className="text-xl font-semibold mb-2">No properties yet</h2>
-            <p className="text-muted-foreground mb-4">Get started by adding your first rental property.</p>
-            <Button asChild>
-              <Link href="/properties/add">
-                <PlusCircle className="mr-2 h-4 w-4" /> Add Property
-              </Link>
-            </Button>
         </div>
       )}
     </div>

@@ -6,7 +6,7 @@ export default function Logo() {
       <div className="p-2 bg-primary rounded-lg">
         <Wrench className="h-6 w-6 text-primary-foreground" />
       </div>
-      <span className="text-xl font-headline text-foreground">PropertyCare Pro</span>
+      <span className="text-xl font-headline text-foreground">PrameaCARE</span>
     </div>
   );
 }

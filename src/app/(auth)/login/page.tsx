@@ -2,95 +2,57 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { useAuth } from '@/components/auth/AuthContext';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, KeyRound } from 'lucide-react';
 
-const PIN_CODE = '1234';
+// Hardcoded user for now
+const USERS = [
+  {
+    name: 'Santeri',
+    pin: '12345678',
+    role: 'admin',
+  },
+];
 
-const formSchema = z.object({
-  pin: z.string().length(4, { message: 'PIN must be 4 digits.' }),
-});
-
-export default function PinLoginPage() {
-  const router = useRouter();
-  const { toast } = useToast();
-  const { login } = useAuth();
+export default function LoginPage() {
+  const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
+  const { login } = useAuth();
+  const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      pin: '',
-    },
-  });
-
-  async function onSubmit(values: z.infer<typeof formSchema>) {
+  const handleLogin = () => {
     setLoading(true);
+    const user = USERS.find((u) => u.pin === pin);
 
-    if (values.pin === PIN_CODE) {
-      login();
-      toast({
-        title: 'Login Successful',
-        description: "You're being redirected to your dashboard.",
-      });
+    if (user) {
+      login(user);
+      toast({ title: 'Success', description: `Welcome, ${user.name}!` });
       router.push('/dashboard');
     } else {
-      toast({
-        variant: 'destructive',
-        title: 'Authentication Failed',
-        description: 'Invalid PIN code.',
-      });
-      form.reset();
+      toast({ title: 'Error', description: 'Invalid PIN', variant: 'destructive' });
       setLoading(false);
     }
-  }
+  };
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader className="items-center text-center">
-        <KeyRound className="w-12 h-12 text-muted-foreground mb-4" />
-        <CardTitle>Enter PIN</CardTitle>
-        <CardDescription>
-          Enter the 4-digit PIN to access the application.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="pin"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>PIN Code</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="password"
-                      maxLength={4}
-                      placeholder="••••" 
-                      {...field} 
-                      className="text-center text-2xl tracking-[1.5rem]"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <Button type="submit" className="w-full" disabled={loading}>
-              {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-              Unlock
-            </Button>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+    <div className="h-screen w-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
+      <div className="w-full max-w-xs p-8 space-y-4 bg-white rounded-lg shadow-md dark:bg-gray-800">
+        <h1 className="text-2xl font-bold text-center">Enter PIN</h1>
+        <Input
+          type="password"
+          value={pin}
+          onChange={(e) => setPin(e.target.value)}
+          placeholder="PIN Code"
+          className="text-center"
+          onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+        />
+        <Button onClick={handleLogin} disabled={loading} className="w-full">
+          {loading ? 'Logging in...' : 'Login'}
+        </Button>
+      </div>
+    </div>
   );
 }

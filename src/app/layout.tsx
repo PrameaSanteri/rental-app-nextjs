@@ -5,8 +5,8 @@ import { FirebaseClientProvider } from '@/firebase/client-provider';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'PropertyCare Pro',
-  description: 'Log and track maintenance tasks for rental properties.',
+  title: 'PrameaCARE',
+  description: 'Streamlining property maintenance with intuitive task management.',
 };
 
 export default function RootLayout({

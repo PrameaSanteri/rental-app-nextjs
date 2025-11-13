@@ -13,7 +13,6 @@ import {
   orderBy,
   limit,
   updateDoc,
-  getCountFromServer,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { revalidatePath } from 'next/cache';
@@ -121,30 +120,15 @@ export async function getTasksForProperty(
 
 // Dashboard Data
 export async function getDashboardData() {
-  // Queries for stats
-  const propertiesCol = collection(db, 'properties');
   const tasksCol = collection(db, 'tasks');
-  const completedTasksQuery = query(tasksCol, where('status', '==', 'Completed'));
   const activeTasksQuery = query(tasksCol, where('status', 'in', ['Open', 'In Progress']));
 
-  // Fetch counts and active tasks in parallel
-  const [
-      propertiesCountSnap,
-      completedTasksCountSnap,
-      activeTasksSnap
-  ] = await Promise.all([
-      getCountFromServer(propertiesCol),
-      getCountFromServer(completedTasksQuery),
-      getDocs(activeTasksQuery)
-  ]);
-
+  const activeTasksSnap = await getDocs(activeTasksQuery);
   const activeTasks = activeTasksSnap.docs.map(doc => doc.data() as MaintenanceTask);
   const overdueTasks = activeTasks.filter(t => t.deadline && t.deadline.toDate() < new Date()).length;
 
   const stats = {
-    totalProperties: propertiesCountSnap.data().count,
     activeTasks: activeTasks.length,
-    completedTasks: completedTasksCountSnap.data().count,
     overdueTasks: overdueTasks,
   };
 

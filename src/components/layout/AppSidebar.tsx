@@ -2,74 +2,47 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Building, LogOut } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/button';
+import { Home, Users, Package } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthContext';
-import Logo from './Logo';
 
-const navItems = [
+const navLinks = [
   { href: '/dashboard', icon: Home, label: 'Dashboard' },
-  { href: '/properties', icon: Building, label: 'Properties' },
+  { href: '/properties', icon: Package, label: 'Properties' },
 ];
 
-type AppSidebarProps = {
-  isMobile?: boolean;
-};
-
-export function AppSidebar({ isMobile = false }: AppSidebarProps) {
+export function AppSidebar() {
   const pathname = usePathname();
-  const { logout } = useAuth();
-
-  const handleLogout = () => {
-    logout();
-  };
-
-  const navContent = (
-    <>
-      <div className="flex h-16 items-center border-b px-4 lg:px-6">
-        <Link href="/dashboard">
-          <Logo />
-        </Link>
-      </div>
-      <div className="flex-1">
-        <nav className="grid items-start px-2 text-sm font-medium lg:px-4">
-          {navItems.map((item) => {
-            const isActive = pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-lg px-3 py-2 transition-all',
-                  isActive
-                    ? 'bg-muted text-primary'
-                    : 'text-muted-foreground hover:text-primary'
-                )}
-              >
-                <item.icon className="h-4 w-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
-      </div>
-      <div className="mt-auto p-4">
-        <Button variant="ghost" className="w-full justify-start gap-3" onClick={handleLogout}>
-          <LogOut className="h-4 w-4" />
-          Log Out
-        </Button>
-      </div>
-    </>
-  );
-
-  if (isMobile) {
-    return navContent;
-  }
+  const { user } = useAuth();
 
   return (
-    <aside className="hidden border-r bg-card md:flex md:w-64 md:flex-col">
-      {navContent}
+    <aside className="w-64 flex-shrink-0 border-r bg-gray-100 p-4 dark:bg-gray-800">
+      <nav className="flex flex-col space-y-2">
+        {navLinks.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={`flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium ${
+              pathname === link.href
+                ? 'bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-gray-100'
+                : 'text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'
+            }`}>
+            <link.icon className="h-5 w-5" />
+            <span>{link.label}</span>
+          </Link>
+        ))}
+        {user?.role === 'admin' && (
+            <Link
+                href="/users"
+                className={`flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium ${
+                pathname === '/users'
+                    ? 'bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-gray-100'
+                    : 'text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'
+                }`}>
+                <Users className="h-5 w-5" />
+                <span>Manage Users</span>
+            </Link>
+        )}
+      </nav>
     </aside>
   );
 }

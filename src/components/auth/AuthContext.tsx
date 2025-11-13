@@ -2,59 +2,67 @@
 
 import { createContext, useContext, useState, type ReactNode, useEffect } from 'react';
 
+interface User {
+  name: string;
+  role: string;
+}
+
 interface AuthContextType {
+  user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  login: () => void;
+  login: (user: User) => void;
   logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType>({
+  user: null,
   isAuthenticated: false,
   loading: true,
   login: () => {},
   logout: () => {},
 });
 
-const AUTH_STORAGE_KEY = 'pin_authenticated';
+const USER_STORAGE_KEY = 'pin_user';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     try {
-      const storedAuth = sessionStorage.getItem(AUTH_STORAGE_KEY);
-      if (storedAuth === 'true') {
-        setIsAuthenticated(true);
+      const storedUser = sessionStorage.getItem(USER_STORAGE_KEY);
+      if (storedUser) {
+        setUser(JSON.parse(storedUser));
       }
     } catch (e) {
-      console.error('Could not read session storage for auth state', e);
+      console.error('Could not read session storage for user data', e);
     }
     setLoading(false);
   }, []);
 
-  const login = () => {
+  const login = (userData: User) => {
     try {
-      sessionStorage.setItem(AUTH_STORAGE_KEY, 'true');
+      sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData));
     } catch (e) {
       console.error('Could not write to session storage', e);
     }
-    setIsAuthenticated(true);
+    setUser(userData);
   };
 
   const logout = () => {
     try {
-      sessionStorage.removeItem(AUTH_STORAGE_KEY);
+      sessionStorage.removeItem(USER_STORAGE_KEY);
     } catch (e) {
       console.error('Could not write to session storage', e);
     }
-    setIsAuthenticated(false);
-    // Redirect to login page after logout
+    setUser(null);
     window.location.href = '/login';
   };
 
-  const value = { isAuthenticated, loading, login, logout };
+  const isAuthenticated = !!user;
+
+  const value = { user, isAuthenticated, loading, login, logout };
 
   return (
     <AuthContext.Provider value={value}>

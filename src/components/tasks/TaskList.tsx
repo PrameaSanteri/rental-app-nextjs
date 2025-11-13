@@ -1,5 +1,7 @@
+'use client';
+import { useState, useTransition } from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal } from 'lucide-react';
+import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -7,17 +9,48 @@ import type { MaintenanceTask } from '@/lib/types';
 import TaskStatusBadge from './TaskStatusBadge';
 import TaskFormDialog from './TaskFormDialog';
 import TaskComments from './TaskComments';
+import { deleteTask } from '@/app/actions';
+import { useToast } from '@/hooks/use-toast';
 
 type TaskListProps = {
   tasks: MaintenanceTask[];
   propertyId?: string;
 };
 
-export default function TaskList({ tasks, propertyId }: TaskListProps) {
+export default function TaskList({ tasks: initialTasks, propertyId }: TaskListProps) {
+  const { toast } = useToast();
+  const [tasks, setTasks] = useState<MaintenanceTask[]>(initialTasks);
+  const [isPending, startTransition] = useTransition();
+
+  const handleTaskCreated = (newTask: MaintenanceTask) => {
+    setTasks(prevTasks => [newTask, ...prevTasks]);
+  };
+
+  const handleTaskUpdated = (updatedTask: MaintenanceTask) => {
+    setTasks(prevTasks => prevTasks.map(task => 
+      task.id === updatedTask.id ? updatedTask : task
+    ));
+  };
+
+  const handleOptimisticDelete = (taskId: string) => {
+    startTransition(() => {
+        const originalTasks = tasks;
+        setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
+
+        deleteTask(taskId).then(result => {
+            if (!result.success) {
+                setTasks(originalTasks);
+                toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete task.' });
+            }
+        });
+    });
+  };
+
   if (tasks.length === 0) {
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">No tasks found.</p>
+        {propertyId && <TaskFormDialog propertyId={propertyId} onTaskCreated={handleTaskCreated} />}
       </div>
     );
   }
@@ -34,26 +67,21 @@ export default function TaskList({ tasks, propertyId }: TaskListProps) {
       </TableHeader>
       <TableBody>
         {tasks.map((task) => (
-          <TableRow key={task.id}>
-            <TableCell>
-              <TaskStatusBadge status={task.status} />
-            </TableCell>
+          <TableRow key={task.id} className={isPending && task.id.startsWith('temp-') ? 'opacity-50' : ''}>
+            <TableCell><TaskStatusBadge status={task.status} /></TableCell>
             <TableCell className="font-medium">{task.title}</TableCell>
-            <TableCell>
-              {task.deadline ? format(task.deadline.toDate(), 'PPP') : 'N/A'}
-            </TableCell>
+            <TableCell>{task.deadline ? format(task.deadline.toDate(), 'PPP') : 'N/A'}</TableCell>
             <TableCell className="text-right">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">Open menu</span>
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
+                  <Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {propertyId && <TaskFormDialog propertyId={propertyId} task={task} />}
+                  {propertyId && <TaskFormDialog propertyId={propertyId} task={task} onTaskUpdated={handleTaskUpdated} />}
                   <TaskComments task={task} />
-                  <DropdownMenuItem className="text-destructive">Delete Task</DropdownMenuItem>
+                  <DropdownMenuItem className="text-destructive" onClick={() => task.id && handleOptimisticDelete(task.id)}>
+                    <Trash2 className="mr-2 h-4 w-4" /> Delete Task
+                  </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </TableCell>
