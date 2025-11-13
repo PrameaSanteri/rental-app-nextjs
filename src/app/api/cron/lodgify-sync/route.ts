@@ -65,12 +65,12 @@ export async function GET() {
         }
     }
 
-    // 3. Update guest counts in Firestore
+    // 3. Check for potential updates without writing to Firestore (DRY RUN)
     const propertiesRef = db.collection('properties');
     const snapshot = await propertiesRef.get();
     
-    const batch = db.batch();
     let updatedCount = 0;
+    const updatesToLog: { [key: string]: any } = {};
 
     snapshot.docs.forEach(doc => {
       const propertyData = doc.data();
@@ -78,22 +78,47 @@ export async function GET() {
       
       const guestCount = lodgifyId ? guestCountByPropertyId[lodgifyId] || 0 : 0;
 
-      // Only update if the count is different
+      // Check if the count is different to see what would be updated
       if (propertyData.currentGuestCount !== guestCount) {
-        batch.update(doc.ref, { currentGuestCount: guestCount });
+        updatesToLog[doc.id] = { 
+          propertyName: propertyData.name || 'Unknown', 
+          oldGuestCount: propertyData.currentGuestCount, 
+          newGuestCount: guestCount 
+        };
         updatedCount++;
       }
     });
 
+    // The actual database write operation is disabled to ensure safety.
+    // To enable writes, you would uncomment the following block and remove the dry run logic.
+    /*
     if (updatedCount > 0) {
+        const batch = db.batch();
+        snapshot.docs.forEach(doc => {
+            const propertyData = doc.data();
+            if (updatesToLog[doc.id]) {
+                batch.update(doc.ref, { currentGuestCount: updatesToLog[doc.id].newGuestCount });
+            }
+        });
         await batch.commit();
     }
+    */
 
-    console.log(`Successfully synchronized guest counts. ${updatedCount} properties updated.`);
-    return NextResponse.json({ success: true, updated_properties: updatedCount });
+    console.log(`[DRY RUN] Lodgify sync check complete. ${updatedCount} properties would be updated.`);
+    if (updatedCount > 0) {
+        console.log('[DRY RUN] Changes that would be made:', JSON.stringify(updatesToLog, null, 2));
+    }
+
+    return NextResponse.json({
+      success: true,
+      status: 'DRY_RUN_ONLY',
+      message: 'Data fetched from Lodgify, but no database writes were performed.',
+      updated_properties_count: updatedCount,
+      updates_that_would_be_made: updatesToLog
+    });
 
   } catch (error: any) {
-    console.error('Error during Lodgify sync:', error);
-    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    console.error('Error during Lodgify sync (dry run):', error);
+    return NextResponse.json({ success: false, error: error.message, status: 'DRY_RUN_FAILED' }, { status: 500 });
   }
 }
