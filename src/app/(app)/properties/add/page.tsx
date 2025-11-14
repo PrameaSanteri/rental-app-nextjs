@@ -15,11 +15,13 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import type { Property } from '@/lib/types';
 
 const formSchema = z.object({
   name: z.string().min(3, 'Property name must be at least 3 characters.'),
   address: z.string().min(5, 'Address must be at least 5 characters.'),
   imageId: z.string().min(1, 'Please select an image.'),
+  lodgifyPropertyId: z.coerce.number().positive('Lodgify ID must be a positive number.'),
 });
 
 export default function AddPropertyPage() {
@@ -33,6 +35,7 @@ export default function AddPropertyPage() {
       name: '',
       address: '',
       imageId: '',
+      lodgifyPropertyId: undefined,
     },
   });
 
@@ -46,12 +49,16 @@ export default function AddPropertyPage() {
         return;
     }
 
-    const result = await addProperty({
-        ...values,
-        imageUrl: selectedImage.imageUrl,
-        imageHint: selectedImage.imageHint,
-        ownerId: 'pinned-user', // Static owner ID since we don't have users
-    });
+    const propertyData: Omit<Property, 'id' | 'createdAt'> = {
+      name: values.name,
+      address: values.address,
+      lodgifyPropertyId: values.lodgifyPropertyId,
+      imageUrl: selectedImage.imageUrl,
+      imageHint: selectedImage.imageHint,
+      ownerId: 'pinned-user', // Static owner ID as we don't have users
+    };
+
+    const result = await addProperty(propertyData);
 
     if (result.error) {
       toast({ variant: 'destructive', title: 'Error', description: result.error });
@@ -94,6 +101,19 @@ export default function AddPropertyPage() {
                     <FormLabel>Address</FormLabel>
                     <FormControl>
                       <Input placeholder="123 Main St, Anytown, USA" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+               <FormField
+                control={form.control}
+                name="lodgifyPropertyId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Lodgify Property ID</FormLabel>
+                    <FormControl>
+                      <Input type="number" placeholder="e.g., 12345" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

@@ -18,14 +18,27 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { revalidatePath } from 'next/cache';
 import type { MaintenanceTask, Property, TaskComment } from './types';
 
-// Property Actions
-export async function addProperty(data: {
-  name: string;
-  address: string;
-  imageUrl: string;
-  imageHint: string;
-  ownerId: string; 
-}) {
+// --- Mock Lodgify API Client ---
+// In a real application, this would be in its own file and use a real API client.
+async function getBookingsFromLodgify(propertyId: number): Promise<{ guests: number }[]> {
+  console.log(`Fetching bookings for property ${propertyId} from Lodgify...`);
+  // MOCK DATA: Simulate fetching bookings. Replace with actual API call.
+  // This simulates a scenario where a property might have 0, 1, or 2 active bookings.
+  const bookingCount = Math.floor(Math.random() * 3);
+  const bookings = [];
+  for (let i = 0; i < bookingCount; i++) {
+    bookings.push({ guests: Math.floor(Math.random() * 5) + 1 }); // Random number of guests between 1 and 5
+  }
+  
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
+  
+  console.log(`Found ${bookings.length} bookings for property ${propertyId}.`);
+  return bookings;
+}
+
+// --- Property Actions ---
+export async function addProperty(data: Omit<Property, 'id' | 'createdAt'>) {
   try {
     await addDoc(collection(db, 'properties'), {
       ...data,
@@ -40,12 +53,37 @@ export async function addProperty(data: {
 }
 
 export async function getProperties(): Promise<Property[]> {
+  // 1. Fetch all properties from Firestore
   const q = query(collection(db, 'properties'), orderBy('createdAt', 'desc'));
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(
+  const properties = querySnapshot.docs.map(
     (doc) => ({ id: doc.id, ...doc.data() } as Property)
   );
+
+  // 2. Fetch guest count for each property from Lodgify in parallel
+  const propertiesWithGuestCount = await Promise.all(
+    properties.map(async (prop) => {
+      try {
+        // Ensure we have a valid Lodgify ID
+        if (prop.lodgifyPropertyId) {
+          const bookings = await getBookingsFromLodgify(prop.lodgifyPropertyId);
+          // Sum up guests from all active bookings
+          const totalGuests = bookings.reduce((sum, booking) => sum + booking.guests, 0);
+          return { ...prop, currentGuestCount: totalGuests };
+        } else {
+          console.warn(`Property ${prop.id} is missing a Lodgify Property ID.`);
+          return { ...prop, currentGuestCount: 0 }; // Default to 0 if no ID
+        }
+      } catch (error) {
+        console.error(`Failed to fetch bookings for property ${prop.id}:`, error);
+        return { ...prop, currentGuestCount: 0 }; // Default to 0 on error
+      }
+    })
+  );
+
+  return propertiesWithGuestCount;
 }
+
 
 export async function getPropertyById(id: string): Promise<Property | null> {
   const docRef = doc(db, 'properties', id);
