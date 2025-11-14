@@ -29,16 +29,13 @@ export default async function PropertiesPage() {
                 <CardTitle className="mb-2 font-headline text-xl">{prop.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">{prop.address}</p>
               </CardContent>
-              <CardFooter className="flex justify-between items-center p-6 pt-0">
+              <CardFooter className="p-6 pt-0">
                  <div className="flex items-center pt-4 border-t w-full">
                    <Users className="mr-2 h-5 w-5 text-muted-foreground" />
                   <span className="text-lg font-bold">
                     {prop.currentGuestCount !== undefined ? prop.currentGuestCount : 'N/A'}
                   </span>
                 </div>
-                <Button asChild variant="secondary">
-                  <Link href={`/properties/${prop.id}`}>View Details</Link>
-                </Button>
               </CardFooter>
             </Card>
           ))}
