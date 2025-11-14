@@ -5,6 +5,7 @@ import {
   collection,
   addDoc,
   doc,
+  deleteDoc, // Keep deleteDoc for the new deleteTask function
   getDoc,
   getDocs,
   query,
@@ -19,25 +20,19 @@ import { revalidatePath } from 'next/cache';
 import type { MaintenanceTask, Property, TaskComment } from './types';
 
 // --- Mock Lodgify API Client ---
-// In a real application, this would be in its own file and use a real API client.
 async function getBookingsFromLodgify(propertyId: number): Promise<{ guests: number }[]> {
   console.log(`Fetching bookings for property ${propertyId} from Lodgify...`);
-  // MOCK DATA: Simulate fetching bookings. Replace with actual API call.
-  // This simulates a scenario where a property might have 0, 1, or 2 active bookings.
   const bookingCount = Math.floor(Math.random() * 3);
-  const bookings = [];
-  for (let i = 0; i < bookingCount; i++) {
-    bookings.push({ guests: Math.floor(Math.random() * 5) + 1 }); // Random number of guests between 1 and 5
-  }
-  
-  // Simulate network delay
+  const bookings = Array.from({ length: bookingCount }, () => ({ 
+    guests: Math.floor(Math.random() * 5) + 1 
+  }));
   await new Promise(resolve => setTimeout(resolve, 500 + Math.random() * 500));
-  
   console.log(`Found ${bookings.length} bookings for property ${propertyId}.`);
   return bookings;
 }
 
 // --- Property Actions ---
+// Updated to accept the new Property type without id and createdAt
 export async function addProperty(data: Omit<Property, 'id' | 'createdAt'>) {
   try {
     await addDoc(collection(db, 'properties'), {
@@ -52,27 +47,24 @@ export async function addProperty(data: Omit<Property, 'id' | 'createdAt'>) {
   }
 }
 
+// Updated to include guest count from Lodgify
 export async function getProperties(): Promise<Property[]> {
-  // 1. Fetch all properties from Firestore
   const q = query(collection(db, 'properties'), orderBy('createdAt', 'desc'));
   const querySnapshot = await getDocs(q);
   const properties = querySnapshot.docs.map(
     (doc) => ({ id: doc.id, ...doc.data() } as Property)
   );
 
-  // 2. Fetch guest count for each property from Lodgify in parallel
   const propertiesWithGuestCount = await Promise.all(
     properties.map(async (prop) => {
       try {
-        // Ensure we have a valid Lodgify ID
         if (prop.lodgifyPropertyId) {
           const bookings = await getBookingsFromLodgify(prop.lodgifyPropertyId);
-          // Sum up guests from all active bookings
           const totalGuests = bookings.reduce((sum, booking) => sum + booking.guests, 0);
           return { ...prop, currentGuestCount: totalGuests };
         } else {
           console.warn(`Property ${prop.id} is missing a Lodgify Property ID.`);
-          return { ...prop, currentGuestCount: 0 }; // Default to 0 if no ID
+          return { ...prop, currentGuestCount: 0 };
         }
       } catch (error) {
         console.error(`Failed to fetch bookings for property ${prop.id}:`, error);
@@ -84,7 +76,6 @@ export async function getProperties(): Promise<Property[]> {
   return propertiesWithGuestCount;
 }
 
-
 export async function getPropertyById(id: string): Promise<Property | null> {
   const docRef = doc(db, 'properties', id);
   const docSnap = await getDoc(docRef);
@@ -94,7 +85,8 @@ export async function getPropertyById(id: string): Promise<Property | null> {
   return null;
 }
 
-// Task Actions
+// --- Task Actions ---
+// Restored original implementation
 export async function upsertTask(formData: FormData) {
   try {
     const rawData = formData.get('data') as string;
@@ -156,7 +148,23 @@ export async function getTasksForProperty(
   );
 }
 
-// Dashboard Data
+// Newly added function for deleting tasks
+export async function deleteTask(taskId: string, propertyId: string) {
+  try {
+    await deleteDoc(doc(db, 'tasks', taskId));
+    
+    revalidatePath(`/properties/${propertyId}`);
+    revalidatePath('/dashboard');
+
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error deleting task:", error);
+    return { error: error.message };
+  }
+}
+
+// --- Dashboard Data ---
+// Restored original implementation
 export async function getDashboardData() {
   const tasksCol = collection(db, 'tasks');
   const activeTasksQuery = query(tasksCol, where('status', 'in', ['Open', 'In Progress']));
@@ -177,7 +185,8 @@ export async function getDashboardData() {
   return { stats, recentTasks };
 }
 
-// Comment Actions
+// --- Comment Actions ---
+// Restored original implementation
 export async function addComment(data: {
   taskId: string;
   text: string;
@@ -192,13 +201,14 @@ export async function addComment(data: {
     const docRef = await addDoc(collection(db, `tasks/${data.taskId}/comments`), commentData);
     const newComment = { id: docRef.id, ...commentData } as TaskComment;
 
-    revalidatePath(`/properties/`); // A bit broad, but ensures data is fresh
+    revalidatePath(`/properties/`);
     return { success: true, newComment };
   } catch (error: any) {
     return { error: error.message };
   }
 }
 
+// Restored original implementation
 export async function getCommentsForTask(taskId: string): Promise<TaskComment[]> {
     const q = query(
         collection(db, `tasks/${taskId}/comments`),

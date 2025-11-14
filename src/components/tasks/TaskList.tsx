@@ -1,7 +1,7 @@
 'use client';
 import { useState, useTransition } from 'react';
 import { format } from 'date-fns';
-import { MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,7 +9,7 @@ import type { MaintenanceTask } from '@/lib/types';
 import TaskStatusBadge from './TaskStatusBadge';
 import TaskFormDialog from './TaskFormDialog';
 import TaskComments from './TaskComments';
-import { deleteTask } from '@/app/actions';
+import { deleteTask } from '@/lib/actions'; // Corrected import path
 import { useToast } from '@/hooks/use-toast';
 
 type TaskListProps = {
@@ -33,12 +33,17 @@ export default function TaskList({ tasks: initialTasks, propertyId }: TaskListPr
   };
 
   const handleOptimisticDelete = (taskId: string) => {
+    if (!propertyId) {
+        toast({ variant: 'destructive', title: 'Error', description: 'Cannot delete task without a property context.' });
+        return;
+    }
+
     startTransition(() => {
         const originalTasks = tasks;
         setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
 
-        deleteTask(taskId).then(result => {
-            if (!result.success) {
+        deleteTask(taskId, propertyId).then(result => {
+            if (result.error) {
                 setTasks(originalTasks);
                 toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete task.' });
             }
@@ -67,7 +72,7 @@ export default function TaskList({ tasks: initialTasks, propertyId }: TaskListPr
       </TableHeader>
       <TableBody>
         {tasks.map((task) => (
-          <TableRow key={task.id} className={isPending && task.id.startsWith('temp-') ? 'opacity-50' : ''}>
+          <TableRow key={task.id}>
             <TableCell><TaskStatusBadge status={task.status} /></TableCell>
             <TableCell className="font-medium">{task.title}</TableCell>
             <TableCell>{task.deadline ? format(task.deadline.toDate(), 'PPP') : 'N/A'}</TableCell>
@@ -79,7 +84,11 @@ export default function TaskList({ tasks: initialTasks, propertyId }: TaskListPr
                 <DropdownMenuContent align="end">
                   {propertyId && <TaskFormDialog propertyId={propertyId} task={task} onTaskUpdated={handleTaskUpdated} />}
                   <TaskComments task={task} />
-                  <DropdownMenuItem className="text-destructive" onClick={() => task.id && handleOptimisticDelete(task.id)}>
+                  <DropdownMenuItem 
+                    className="text-destructive" 
+                    onClick={() => task.id && handleOptimisticDelete(task.id)}
+                    disabled={isPending || !propertyId}
+                  >
                     <Trash2 className="mr-2 h-4 w-4" /> Delete Task
                   </DropdownMenuItem>
                 </DropdownMenuContent>
