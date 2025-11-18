@@ -14,27 +14,37 @@ import {
 import { useAuth } from '@/components/auth/AuthContext';
 
 export function UserNav() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
   };
+
+  const getInitials = (name: string | null | undefined, email: string | null | undefined) => {
+    if (name) {
+      return name.split(' ').map(n => n[0]).join('').toUpperCase();
+    }
+    if (email) {
+      return email[0].toUpperCase();
+    }
+    return 'U';
+  }
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" className="relative h-8 w-8 rounded-full">
           <Avatar className="h-8 w-8">
-            <AvatarFallback>A</AvatarFallback>
+            <AvatarFallback>{getInitials(user?.displayName, user?.email)}</AvatarFallback>
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
-            <p className="text-sm font-medium leading-none">Admin</p>
+            <p className="text-sm font-medium leading-none">{user?.displayName || user?.email}</p>
             <p className="text-xs leading-none text-muted-foreground">
-              PIN Authenticated
+              {user?.role ? `Role: ${user.role}` : 'User'}
             </p>
           </div>
         </DropdownMenuLabel>
