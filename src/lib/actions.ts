@@ -18,6 +18,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { revalidatePath } from 'next/cache';
 import type { MaintenanceTask, Property, TaskComment } from './types';
+import { analyzeCheckinTimes } from '@/ai/genkit';
 
 // --- Mock Lodgify API Client ---
 async function getBookingsFromLodgify(propertyId: number): Promise<{ guests: number }[]> {
@@ -186,7 +187,6 @@ export async function getDashboardData() {
 }
 
 // --- Comment Actions ---
-// Restored original implementation
 export async function addComment(data: {
   taskId: string;
   text: string;
@@ -194,6 +194,7 @@ export async function addComment(data: {
   userDisplayName: string;
 }) {
   try {
+    // 1. Add the original comment
     const commentData = {
         ...data,
         createdAt: Timestamp.now(),
@@ -201,12 +202,37 @@ export async function addComment(data: {
     const docRef = await addDoc(collection(db, `tasks/${data.taskId}/comments`), commentData);
     const newComment = { id: docRef.id, ...commentData } as TaskComment;
 
+    // 2. Analyze the comment text with AI
+    try {
+        const checkinAnalysis = await analyzeCheckinTimes({ message: data.text });
+
+        const updateData: Partial<Pick<MaintenanceTask, 'checkIn' | 'checkOut'>> = {};
+
+        if (checkinAnalysis.checkIn) {
+            updateData.checkIn = Timestamp.fromDate(new Date(checkinAnalysis.checkIn));
+        }
+        if (checkinAnalysis.checkOut) {
+            updateData.checkOut = Timestamp.fromDate(new Date(checkinAnalysis.checkOut));
+        }
+
+        // 3. If the AI found dates, update the parent task
+        if (Object.keys(updateData).length > 0) {
+            const taskRef = doc(db, 'tasks', data.taskId);
+            await updateDoc(taskRef, updateData);
+        }
+    } catch (aiError) {
+        console.error('AI analysis failed:', aiError);
+        // We don't block the comment from being added if the AI fails.
+        // We just log the error.
+    }
+
     revalidatePath(`/properties/`);
     return { success: true, newComment };
   } catch (error: any) {
     return { error: error.message };
   }
 }
+
 
 // Restored original implementation
 export async function getCommentsForTask(taskId: string): Promise<TaskComment[]> {

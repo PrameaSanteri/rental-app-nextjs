@@ -160,6 +160,25 @@ export default function TaskFormDialog({ propertyId, task, onTaskCreated, onTask
                   </Popover><FormMessage /></FormItem>
               )}
             />
+            
+            {task?.checkIn && (
+              <FormItem>
+                <FormLabel>Check-In Time (from comment)</FormLabel>
+                <p className="text-sm pt-2 text-muted-foreground">
+                  {format(task.checkIn.toDate(), 'PPP p')}
+                </p>
+              </FormItem>
+            )}
+
+            {task?.checkOut && (
+              <FormItem>
+                <FormLabel>Check-Out Time (from comment)</FormLabel>
+                <p className="text-sm pt-2 text-muted-foreground">
+                  {format(task.checkOut.toDate(), 'PPP p')}
+                </p>
+              </FormItem>
+            )}
+
              <FormItem>
               <FormLabel>Photos</FormLabel>
               <FormControl>

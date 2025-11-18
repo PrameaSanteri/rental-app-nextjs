@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { PlusCircle, Users } from 'lucide-react';
+import Image from 'next/image';
 
 export default async function PropertiesPage() {
   const properties = await getProperties();
@@ -20,11 +21,27 @@ export default async function PropertiesPage() {
       </div>
 
       {properties.length === 0 ? (
-        <p>No properties found. Add your first one!</p>
+        <div className="text-center py-12">
+          <p className="text-muted-foreground mb-4">No properties found. Add your first one!</p>
+          <Button asChild>
+            <Link href="/properties/add">
+              <PlusCircle className="mr-2 h-4 w-4" /> Add Property
+            </Link>
+          </Button>
+        </div>
       ) : (
         <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {properties.map((prop) => (
-            <Card key={prop.id} className="flex flex-col">
+            <Card key={prop.id} className="flex flex-col overflow-hidden">
+                <div className="relative h-48 w-full">
+                    <Image
+                        src={prop.imageUrl}
+                        alt={`Image of ${prop.name}`}
+                        fill
+                        className="object-cover"
+                        data-ai-hint={prop.imageHint}
+                    />
+                </div>
               <CardContent className="flex-1 p-6">
                 <CardTitle className="mb-2 font-headline text-xl">{prop.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">{prop.address}</p>

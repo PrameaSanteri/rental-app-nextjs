@@ -27,6 +27,8 @@ export type MaintenanceTask = {
   deadline: Timestamp | null;
   createdAt: Timestamp;
   photos: { url: string; path: string }[];
+  checkIn?: Timestamp;
+  checkOut?: Timestamp;
 };
 
 export type TaskComment = {
