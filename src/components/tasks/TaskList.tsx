@@ -1,5 +1,6 @@
 'use client';
 import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { format } from 'date-fns';
 import { MoreHorizontal, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,7 +12,6 @@ import TaskFormDialog from './TaskFormDialog';
 import TaskComments from './TaskComments';
 import { deleteTask } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
 
 type TaskListProps = {
   tasks: MaintenanceTask[];
