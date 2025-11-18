@@ -3,7 +3,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/components/auth/AuthContext';
-import { AppSidebar } from '@/components/layout/AppSidebar';
 import { AppHeader } from '@/components/layout/AppHeader';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -32,7 +31,6 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen w-full bg-background">
-      <AppSidebar />
       <div className="flex flex-1 flex-col">
         <AppHeader />
         <main className="flex-1 overflow-y-auto bg-background/95 p-4 sm:p-6 lg:p-8">

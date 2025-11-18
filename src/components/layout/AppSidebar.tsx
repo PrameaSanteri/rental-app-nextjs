@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Users, Package } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthContext';
-import Logo from './Logo';
 import { cn } from '@/lib/utils';
 
 
@@ -14,11 +13,10 @@ const navLinks = [
 ];
 
 interface AppSidebarProps {
-  isMobile?: boolean;
   onLinkClick?: () => void;
 }
 
-export function AppSidebar({ isMobile = false, onLinkClick }: AppSidebarProps) {
+export function AppSidebar({ onLinkClick }: AppSidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
 
@@ -34,14 +32,7 @@ export function AppSidebar({ isMobile = false, onLinkClick }: AppSidebarProps) {
   );
 
   return (
-    <aside className={cn('flex flex-col', isMobile ? 'w-full' : 'w-64 border-r bg-background')}>
-      {!isMobile && (
-        <div className="flex h-16 items-center border-b px-6">
-          <Link href="/dashboard">
-            <Logo />
-          </Link>
-        </div>
-      )}
+    <aside className='flex flex-col w-full'>
       <div className="flex-1">
         <nav className="grid items-start gap-1 p-4 text-sm font-medium">
             {navLinks.map((link) => (
