@@ -4,6 +4,9 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Home, Users, Package } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthContext';
+import Logo from './Logo';
+import { cn } from '@/lib/utils';
+
 
 const navLinks = [
   { href: '/dashboard', icon: Home, label: 'Dashboard' },
@@ -12,50 +15,58 @@ const navLinks = [
 
 interface AppSidebarProps {
   isMobile?: boolean;
-  onLinkClick?: () => void; // Callback to be called when a link is clicked
+  onLinkClick?: () => void;
 }
 
-export function AppSidebar({ isMobile, onLinkClick }: AppSidebarProps) {
+export function AppSidebar({ isMobile = false, onLinkClick }: AppSidebarProps) {
   const pathname = usePathname();
   const { user } = useAuth();
 
   const handleLinkClick = () => {
-    if (onLinkClick) {
-      onLinkClick();
-    }
+    onLinkClick?.();
   };
 
+  const linkClasses = (href: string) => cn(
+    "flex items-center gap-3 rounded-lg px-3 py-2 text-muted-foreground transition-all hover:text-primary",
+    {
+        "bg-accent text-primary": pathname === href,
+    }
+  );
+
   return (
-    <aside className={`flex-shrink-0 border-r bg-gray-100 p-4 dark:bg-gray-800 ${isMobile ? 'w-full' : 'w-64'}`}>
-      <nav className="flex flex-col space-y-2">
-        {navLinks.map((link) => (
-          <Link
-            key={link.href}
-            href={link.href}
-            onClick={handleLinkClick} // Add onClick handler
-            className={`flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium ${
-              pathname === link.href
-                ? 'bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-gray-100'
-                : 'text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'
-            }`}>
-            <link.icon className="h-5 w-5" />
-            <span>{link.label}</span>
+    <aside className={cn('flex flex-col', isMobile ? 'w-full' : 'w-64 border-r bg-background')}>
+      {!isMobile && (
+        <div className="flex h-16 items-center border-b px-6">
+          <Link href="/dashboard">
+            <Logo />
           </Link>
-        ))}
-        {user?.role === 'admin' && (
+        </div>
+      )}
+      <div className="flex-1">
+        <nav className="grid items-start gap-1 p-4 text-sm font-medium">
+            {navLinks.map((link) => (
             <Link
-                href="/users"
-                onClick={handleLinkClick} // Add onClick handler
-                className={`flex items-center space-x-2 rounded-md px-3 py-2 text-sm font-medium ${
-                pathname === '/users'
-                    ? 'bg-gray-200 text-gray-900 dark:bg-gray-700 dark:text-gray-100'
-                    : 'text-gray-500 hover:bg-gray-200 dark:text-gray-400 dark:hover:bg-gray-700'
-                }`}>
-                <Users className="h-5 w-5" />
-                <span>Manage Users</span>
+                key={link.href}
+                href={link.href}
+                onClick={handleLinkClick}
+                className={linkClasses(link.href)}
+            >
+                <link.icon className="h-4 w-4" />
+                <span>{link.label}</span>
             </Link>
-        )}
-      </nav>
+            ))}
+            {user?.role === 'admin' && (
+                <Link
+                    href="/users"
+                    onClick={handleLinkClick}
+                    className={linkClasses('/users')}
+                >
+                    <Users className="h-4 w-4" />
+                    <span>Manage Users</span>
+                </Link>
+            )}
+        </nav>
+      </div>
     </aside>
   );
 }

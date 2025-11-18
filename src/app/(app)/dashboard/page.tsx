@@ -11,7 +11,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold font-headline">Dashboard</h1>
+        <h1 className="text-3xl font-bold">Dashboard</h1>
         <Button asChild>
           <Link href="/properties/add">
             <PlusCircle className="mr-2 h-4 w-4" /> Add Property
@@ -19,7 +19,7 @@ export default async function DashboardPage() {
         </Button>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Active Tasks</CardTitle>
@@ -27,6 +27,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{stats.activeTasks}</div>
+            <p className="text-xs text-muted-foreground">Tasks currently open or in progress</p>
           </CardContent>
         </Card>
         <Card>
@@ -36,6 +37,7 @@ export default async function DashboardPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-destructive">{stats.overdueTasks}</div>
+            <p className="text-xs text-muted-foreground">Tasks past their deadline</p>
           </CardContent>
         </Card>
       </div>

@@ -19,12 +19,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
 
   if (loading || !isAuthenticated) {
     return (
-      <div className="flex h-screen w-full items-center justify-center">
+      <div className="flex h-screen w-full items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-           <Skeleton className="h-12 w-12 rounded-full" />
-           <div className="space-y-2">
+           <Skeleton className="h-24 w-48" />
+           <div className="space-y-2 mt-4">
              <Skeleton className="h-4 w-[250px]" />
-             <Skeleton className="h-4 w-[200px]" />
            </div>
         </div>
       </div>
@@ -32,14 +31,11 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   }
 
   return (
-    <div className="flex min-h-screen w-full">
-      {/* Desktop Sidebar */}
-      <div className="hidden md:block">
-        <AppSidebar />
-      </div>
+    <div className="flex min-h-screen w-full bg-background">
+      <AppSidebar />
       <div className="flex flex-1 flex-col">
         <AppHeader />
-        <main className="flex-1 overflow-y-auto bg-secondary/50 p-4 sm:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto bg-background/95 p-4 sm:p-6 lg:p-8">
           {children}
         </main>
       </div>

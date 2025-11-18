@@ -6,8 +6,10 @@ import { useAuth } from '@/components/auth/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { Loader2 } from 'lucide-react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-// Hardcoded user for now
+
 const USERS = [
   {
     name: 'Santeri',
@@ -20,10 +22,14 @@ export default function LoginPage() {
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
   const { toast } = useToast();
 
   const handleLogin = () => {
+    if (!pin) {
+        toast({ title: 'Error', description: 'Please enter a PIN.', variant: 'destructive' });
+        return;
+    }
     setLoading(true);
     const user = USERS.find((u) => u.pin === pin);
 
@@ -37,22 +43,32 @@ export default function LoginPage() {
     }
   };
 
+  if (isAuthenticated) {
+    router.push('/dashboard');
+    return null;
+  }
+
   return (
-    <div className="h-screen w-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900">
-      <div className="w-full max-w-xs p-8 space-y-4 bg-white rounded-lg shadow-md dark:bg-gray-800">
-        <h1 className="text-2xl font-bold text-center">Enter PIN</h1>
+    <Card>
+      <CardHeader className="text-center">
+        <CardTitle>Welcome</CardTitle>
+        <CardDescription>Enter your PIN to access the dashboard</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
         <Input
           type="password"
           value={pin}
           onChange={(e) => setPin(e.target.value)}
-          placeholder="PIN Code"
-          className="text-center"
+          placeholder="Your PIN Code"
+          className="text-center text-lg h-12"
           onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+          autoFocus
         />
-        <Button onClick={handleLogin} disabled={loading} className="w-full">
-          {loading ? 'Logging in...' : 'Login'}
+        <Button onClick={handleLogin} disabled={loading} className="w-full" size="lg">
+          {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          Login
         </Button>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

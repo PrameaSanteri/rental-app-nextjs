@@ -6,8 +6,8 @@
 
 @layer base {
   :root {
-    --background: 215 28% 17%;      /* Navy Blue */
-    --foreground: 210 40% 98%;      /* White */
+    --background: 215 28% 17%;      /* Navy Blue from logo */
+    --foreground: 210 40% 98%;      /* White from logo */
 
     --card: 217 19% 27%;            /* Dark Gray */
     --card-foreground: 210 40% 98%;
@@ -15,8 +15,8 @@
     --popover: 217 19% 27%;         /* Dark Gray */
     --popover-foreground: 210 40% 98%;
  
-    --primary: 173 80% 40%;         /* Turquoise */
-    --primary-foreground: 210 40% 98%; /* White text on Turquoise */
+    --primary: 210 40% 98%;         /* White for primary actions */
+    --primary-foreground: 215 28% 17%; /* Navy for text on primary */
  
     --secondary: 217 19% 27%;       /* Dark Gray */
     --secondary-foreground: 210 40% 98%;
@@ -24,7 +24,7 @@
     --muted: 215 14% 63%;           /* Lighter Gray for muted text */
     --muted-foreground: 215 14% 63%;
  
-    --accent: 173 80% 40%;          /* Use Turquoise as accent as well */
+    --accent: 217 19% 27%;          /* Dark Gray as accent */
     --accent-foreground: 210 40% 98%;
  
     --destructive: 0 72% 51%;      /* A slightly adjusted red */
@@ -32,9 +32,9 @@
 
     --border: 217 19% 27%;          /* Dark Gray */
     --input: 217 19% 37%;           /* Slightly lighter gray for inputs */
-    --ring: 173 80% 40%;            /* Turquoise for focus rings */
+    --ring: 210 40% 98%;            /* White for focus rings */
 
-    --radius: 0.75rem;
+    --radius: 0.5rem;
   }
 
   * {
