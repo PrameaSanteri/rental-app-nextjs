@@ -90,7 +90,9 @@ export default function TaskList({ tasks: initialTasks, propertyId }: TaskListPr
                   <Button variant="ghost" className="h-8 w-8 p-0"><span className="sr-only">Open menu</span><MoreHorizontal className="h-4 w-4" /></Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  {propertyId && <TaskFormDialog propertyId={propertyId} task={task} onTaskUpdated={handleTaskUpdated} />}
+                  {propertyId && <TaskFormDialog propertyId={propertyId} task={task} onTaskUpdated={handleTaskUpdated}>
+                    <DropdownMenuItem onSelect={(e) => e.preventDefault()}>Edit Task</DropdownMenuItem>
+                  </TaskFormDialog>}
                   <TaskComments task={task} />
                   <DropdownMenuItem 
                     className="text-destructive" 
