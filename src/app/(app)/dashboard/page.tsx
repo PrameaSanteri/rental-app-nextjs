@@ -4,9 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { getDashboardData } from '@/lib/actions';
 import TaskList from '@/components/tasks/TaskList';
+import { getProperties } from '@/lib/actions';
+import PropertyCard from '@/components/properties/PropertyCard';
 
 export default async function DashboardPage() {
   const { stats, recentTasks } = await getDashboardData();
+  const properties = await getProperties();
 
   return (
     <div className="space-y-8">

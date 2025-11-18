@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -31,12 +32,14 @@ const formSchema = z.object({
 type TaskFormDialogProps = {
   propertyId: string;
   task?: MaintenanceTask;
-  onTaskCreated?: (task: MaintenanceTask) => void; // For optimistic UI
-  onTaskUpdated?: (task: MaintenanceTask) => void; // For optimistic UI
+  onTaskCreated?: (task: MaintenanceTask) => void;
+  onTaskUpdated?: (task: MaintenanceTask) => void;
+  children?: React.ReactNode;
 };
 
-export default function TaskFormDialog({ propertyId, task, onTaskCreated, onTaskUpdated }: TaskFormDialogProps) {
+export default function TaskFormDialog({ propertyId, task, onTaskCreated, onTaskUpdated, children }: TaskFormDialogProps) {
   const { toast } = useToast();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
@@ -51,6 +54,19 @@ export default function TaskFormDialog({ propertyId, task, onTaskCreated, onTask
     },
   });
 
+   // Reset form when dialog opens for a new task
+   React.useEffect(() => {
+    if (open) {
+      form.reset({
+        title: task?.title || '',
+        description: task?.description || '',
+        status: task?.status || 'Open',
+        deadline: task?.deadline ? task.deadline.toDate() : undefined,
+      });
+      setPhotos([]);
+    }
+  }, [open, task, form]);
+
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     if (event.target.files) {
       setPhotos(Array.from(event.target.files));
@@ -59,26 +75,7 @@ export default function TaskFormDialog({ propertyId, task, onTaskCreated, onTask
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setLoading(true);
-    const isEditing = !!task;
-
-    const optimisticTask: MaintenanceTask = {
-      id: task?.id || new Date().toISOString(), // Temporary ID for new tasks
-      ...task,
-      ...values,
-      propertyId,
-      deadline: values.deadline ? Timestamp.fromDate(values.deadline) : null,
-      createdAt: task?.createdAt || Timestamp.now(),
-      photos: task?.photos || [],
-    };
-
-    // Immediately close the dialog and update the UI optimistically
-    setOpen(false);
-    if (isEditing) {
-      onTaskUpdated?.(optimisticTask);
-    } else {
-      onTaskCreated?.(optimisticTask);
-    }
-
+    
     const formData = new FormData();
     formData.append('data', JSON.stringify({ ...values, propertyId, id: task?.id }));
     photos.forEach((photo) => {
@@ -87,34 +84,41 @@ export default function TaskFormDialog({ propertyId, task, onTaskCreated, onTask
 
     const result = await upsertTask(formData);
 
+    setLoading(false);
+
     if (result.error) {
         toast({ variant: 'destructive', title: 'Error', description: result.error });
-        // NOTE: In a real app, you would need to revert the optimistic update here.
-        // This part is simplified for brevity.
     } else {
-        // The backend operation was successful. The optimistic update is now the source of truth.
-        // We could potentially get the final state from the server and update the UI again, but for now, this is sufficient.
         toast({ title: 'Success', description: `Task ${task ? 'updated' : 'created'} successfully.` });
+        setOpen(false);
+        // Let the parent component handle optimistic updates if needed
+        if (task && onTaskUpdated) {
+            // A bit of a hack to create the updated task object
+            const updatedTask = { ...task, ...values, deadline: values.deadline ? Timestamp.fromDate(values.deadline) : null};
+            onTaskUpdated(updatedTask);
+        } else if (!task && onTaskCreated) {
+            // Server should return the created task ideally, for now we just refresh
+            router.refresh();
+        } else {
+            router.refresh();
+        }
     }
-    
-    // Reset form state after submission logic
-    form.reset();
-    setPhotos([]);
-    setLoading(false); // Make sure loading is set to false
   }
+
+  const trigger = children ? (
+    <div onClick={() => setOpen(true)} className="w-full">
+      {children}
+    </div>
+  ) : (
+    <Button>
+      <PlusCircle className="mr-2 h-4 w-4" /> Add Task
+    </Button>
+  );
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        {task ? (
-          <Button variant="ghost" className="w-full justify-start p-2 h-auto text-sm font-normal">
-            <Edit className="mr-2 h-4 w-4" /> Edit Task
-          </Button>
-        ) : (
-          <Button>
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Task
-          </Button>
-        )}
+        {trigger}
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
@@ -122,7 +126,6 @@ export default function TaskFormDialog({ propertyId, task, onTaskCreated, onTask
         </DialogHeader>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* Form fields remain the same */}
             <FormField control={form.control} name="title" render={({ field }) => (
                 <FormItem><FormLabel>Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )}

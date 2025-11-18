@@ -6,10 +6,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { formatDistanceToNow } from 'date-fns';
 import { MessageSquare, Loader2 } from 'lucide-react';
+import { useAuth } from '@/components/auth/AuthContext';
 
 import { Button } from '@/components/ui/button';
 import { Drawer, DrawerContent, DrawerDescription, DrawerHeader, DrawerTitle, DrawerTrigger, DrawerFooter, DrawerClose } from '@/components/ui/drawer';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -31,6 +32,7 @@ export default function TaskComments({ task }: TaskCommentsProps) {
   const [loading, setLoading] = useState(false);
   const [comments, setComments] = useState<TaskComment[]>([]);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   const form = useForm<z.infer<typeof commentSchema>>({
     resolver: zodResolver(commentSchema),
@@ -48,12 +50,17 @@ export default function TaskComments({ task }: TaskCommentsProps) {
   };
 
   async function onSubmit(values: z.infer<typeof commentSchema>) {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to comment.' });
+        return;
+    }
+
     setLoading(true);
     const result = await addComment({
       taskId: task.id,
       text: values.text,
-      userId: 'pinned-user',
-      userDisplayName: 'Admin',
+      userId: user.uid,
+      userDisplayName: user.displayName || user.email || 'Anonymous',
     });
 
     if (result.error) {
@@ -69,7 +76,7 @@ export default function TaskComments({ task }: TaskCommentsProps) {
   
   const getInitials = (name: string | null | undefined) => {
     if (!name) return 'U';
-    return name.split(' ').map(n => n[0]).join('');
+    return name.split(' ').map(n => n[0]).join('').toUpperCase();
   }
 
   return (
@@ -80,7 +87,7 @@ export default function TaskComments({ task }: TaskCommentsProps) {
         </Button>
       </DrawerTrigger>
       <DrawerContent>
-        <div className="mx-auto w-full max-w-sm">
+        <div className="mx-auto w-full max-w-2xl">
           <DrawerHeader>
             <DrawerTitle>Comments for: {task.title}</DrawerTitle>
             <DrawerDescription>View and add comments for this task.</DrawerDescription>
@@ -92,7 +99,7 @@ export default function TaskComments({ task }: TaskCommentsProps) {
                     <FormItem className="flex-grow"><FormControl><Input placeholder="Add a comment..." {...field} /></FormControl><FormMessage /></FormItem>
                   )}
                 />
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading || !user}>
                   {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Send'}
                 </Button>
               </form>

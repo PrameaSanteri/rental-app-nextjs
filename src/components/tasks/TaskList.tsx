@@ -9,8 +9,9 @@ import type { MaintenanceTask } from '@/lib/types';
 import TaskStatusBadge from './TaskStatusBadge';
 import TaskFormDialog from './TaskFormDialog';
 import TaskComments from './TaskComments';
-import { deleteTask } from '@/lib/actions'; // Corrected import path
+import { deleteTask } from '@/lib/actions';
 import { useToast } from '@/hooks/use-toast';
+import { useRouter } from 'next/navigation';
 
 type TaskListProps = {
   tasks: MaintenanceTask[];
@@ -21,15 +22,19 @@ export default function TaskList({ tasks: initialTasks, propertyId }: TaskListPr
   const { toast } = useToast();
   const [tasks, setTasks] = useState<MaintenanceTask[]>(initialTasks);
   const [isPending, startTransition] = useTransition();
+  const router = useRouter();
+
 
   const handleTaskCreated = (newTask: MaintenanceTask) => {
     setTasks(prevTasks => [newTask, ...prevTasks]);
+    router.refresh();
   };
 
   const handleTaskUpdated = (updatedTask: MaintenanceTask) => {
     setTasks(prevTasks => prevTasks.map(task => 
       task.id === updatedTask.id ? updatedTask : task
     ));
+    router.refresh();
   };
 
   const handleOptimisticDelete = (taskId: string) => {
@@ -46,6 +51,9 @@ export default function TaskList({ tasks: initialTasks, propertyId }: TaskListPr
             if (result.error) {
                 setTasks(originalTasks);
                 toast({ variant: 'destructive', title: 'Error', description: 'Failed to delete task.' });
+            } else {
+                toast({ title: 'Success', description: 'Task deleted.' });
+                router.refresh();
             }
         });
     });
@@ -55,7 +63,7 @@ export default function TaskList({ tasks: initialTasks, propertyId }: TaskListPr
     return (
       <div className="text-center py-12">
         <p className="text-muted-foreground">No tasks found.</p>
-        {propertyId && <TaskFormDialog propertyId={propertyId} onTaskCreated={handleTaskCreated} />}
+        {propertyId && <div className="mt-4"><TaskFormDialog propertyId={propertyId} onTaskCreated={handleTaskCreated} /></div>}
       </div>
     );
   }

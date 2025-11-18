@@ -13,8 +13,8 @@ export type Property = {
   imageUrl: string;
   imageHint: string;
   ownerId: string;
-  lodgifyPropertyId: number; // Add Lodgify Property ID
-  currentGuestCount?: number; // Add current guest count (optional)
+  lodgifyPropertyId: number; 
+  currentGuestCount?: number; 
   createdAt: Timestamp;
 };
 
